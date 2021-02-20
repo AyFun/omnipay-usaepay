@@ -1,0 +1,30 @@
+{
+    "name": "ayfun/omnipay-usaepay",
+    "type": "library",
+    "description": "USA ePay driver for the Omnipay payment processing library",
+    "keywords": [
+        "gateway",
+        "merchant",
+        "omnipay",
+        "pay",
+        "payment",
+        "usaepay"
+    ],
+    "homepage": "https://github.com/ayfun/omnipay-usaepay",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Fun",
+            "email": "i@guowei.wang"
+        }
+    ],
+    "autoload": {
+        "psr-4": { "Omnipay\\USAePay\\" : "src/" }
+    },
+    "require": {
+        "omnipay/common": "^3"
+    },
+    "require-dev": {
+        "omnipay/tests": "^3"
+    }
+}
