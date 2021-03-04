@@ -6,7 +6,9 @@ use Exception;
 use Guzzle;
 use Guzzle\Common\Event;
 use Omnipay\Common\Message\AbstractRequest as OmnipayAbstractRequest;
-use umTransaction;
+use Omnipay\USAePay\umTransaction;
+//use PhpUsaepay\Client;
+//use PhpUsaepay\ServiceProvider as PhpUsaepaySP;
 
 /**
  * USAePay Abstract Request.
@@ -144,77 +146,54 @@ abstract class AbstractRequest extends OmnipayAbstractRequest
 
     public function sendData($data)
     {
-        // check if we are mocking a request
-        $mock = false;
 
-        $listeners = $this->httpClient->getEventDispatcher()->getListeners('request.before_send');
-        foreach ($listeners as $listener) {
-            if (get_class($listener[0]) === 'Guzzle\Plugin\Mock\MockPlugin') {
-                $mock = true;
+        $umTransaction = new umTransaction();
+        $umTransaction->usesandbox = $this->getSandbox();
+        $umTransaction->testmode = $this->getTestMode();
+        $umTransaction->key = $this->getSource();
+        $umTransaction->pin = $this->getPin();
+        $umTransaction->command = $this->getCommand();
+        $umTransaction->invoice = $this->getInvoice();
+        $umTransaction->amount = $data['amount'];
+        $umTransaction->description = $this->getDescription();
+        $umTransaction->addcustomer = $this->getAddCustomer();
+        $umTransaction->schedule = $this->getInterval();
+        $umTransaction->numleft = $this->getIntervalCount();
+        $umTransaction->start = 'next';
 
-                break;
-            }
-        }
+        if (isset($data['card'])) {
+            $umTransaction->card = $this->getCard()->getNumber();
+            $umTransaction->exp = $this->getCard()->getExpiryDate('my');
+            $umTransaction->cvv2 = $this->getCard()->getCvv();
+            $umTransaction->cardholder = $this->getCard()->getName();
+            $umTransaction->street = $this->getCard()->getAddress1();
+            $umTransaction->zip = $this->getCard()->getPostcode();
+            $umTransaction->email = $this->getCard()->getEmail();
 
-        // if we are mocking, use guzzle, otherwise use umTransaction
-        if ($mock) {
-            $httpRequest = $this->httpClient->createRequest(
-                $this->getHttpMethod(),
-                $this->getEndpoint(),
-                null,
-                $data
-            );
-
-            $httpResponse = $httpRequest->send();
+            $umTransaction->billfname = $this->getCard()->getBillingFirstName();
+            $umTransaction->billlname = $this->getCard()->getBillingLastName();
+            $umTransaction->billcompany = $this->getCard()->getBillingCompany();
+            $umTransaction->billstreet = $this->getCard()->getBillingAddress1();
+            $umTransaction->billstreet2 = $this->getCard()->getBillingAddress2();
+            $umTransaction->billcity = $this->getCard()->getBillingCity();
+            $umTransaction->billstate = $this->getCard()->getBillingState();
+            $umTransaction->billzip = $this->getCard()->getBillingPostcode();
+            $umTransaction->billcountry = $this->getCard()->getBillingCountry();
+            $umTransaction->billphone = $this->getCard()->getBillingPhone();
+        } elseif ($this->getCardReference()) {
+            $umTransaction->card = $this->getCardReference();
+            $umTransaction->exp = '0000';
         } else {
-            $umTransaction = new umTransaction();
-            $umTransaction->usesandbox = $this->getSandbox();
-            $umTransaction->testmode = $this->getTestMode();
-            $umTransaction->key = $this->getSource();
-            $umTransaction->pin = $this->getPin();
-            $umTransaction->command = $this->getCommand();
-            $umTransaction->invoice = $this->getInvoice();
-            $umTransaction->amount = $data['amount'];
-            $umTransaction->description = $this->getDescription();
-            $umTransaction->addcustomer = $this->getAddCustomer();
-            $umTransaction->schedule = $this->getInterval();
-            $umTransaction->numleft = $this->getIntervalCount();
-            $umTransaction->start = 'next';
-
-            if (isset($data['card'])) {
-                $umTransaction->card = $this->getCard()->getNumber();
-                $umTransaction->exp = $this->getCard()->getExpiryDate('my');
-                $umTransaction->cvv2 = $this->getCard()->getCvv();
-                $umTransaction->cardholder = $this->getCard()->getName();
-                $umTransaction->street = $this->getCard()->getAddress1();
-                $umTransaction->zip = $this->getCard()->getPostcode();
-                $umTransaction->email = $this->getCard()->getEmail();
-
-                $umTransaction->billfname = $this->getCard()->getBillingFirstName();
-                $umTransaction->billlname = $this->getCard()->getBillingLastName();
-                $umTransaction->billcompany = $this->getCard()->getBillingCompany();
-                $umTransaction->billstreet = $this->getCard()->getBillingAddress1();
-                $umTransaction->billstreet2 = $this->getCard()->getBillingAddress2();
-                $umTransaction->billcity = $this->getCard()->getBillingCity();
-                $umTransaction->billstate = $this->getCard()->getBillingState();
-                $umTransaction->billzip = $this->getCard()->getBillingPostcode();
-                $umTransaction->billcountry = $this->getCard()->getBillingCountry();
-                $umTransaction->billphone = $this->getCard()->getBillingPhone();
-            } elseif ($this->getCardReference()) {
-                $umTransaction->card = $this->getCardReference();
-                $umTransaction->exp = '0000';
-            } else {
-                $umTransaction->refnum = $this->getTransactionReference();
-            }
-
-            $processResult = $umTransaction->Process();
-
-            if ($processResult !== true) {
-                throw new Exception($umTransaction->error);
-            }
-
-            $httpResponse = Guzzle\Http\Message\Response::fromMessage($umTransaction->rawresult);
+            $umTransaction->refnum = $this->getTransactionReference();
         }
+
+        $processResult = $umTransaction->Process();
+
+        if ($processResult !== true) {
+            throw new Exception($umTransaction->error);
+        }
+
+        $httpResponse = Guzzle\Http\Message\Response::fromMessage($umTransaction->rawresult);
 
         return $this->response = new Response($this, $httpResponse->getBody());
     }
