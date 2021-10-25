@@ -1199,7 +1199,7 @@ class umTransaction {
 
 		//init the connection
 		$ch = curl_init($url);
-		if(!is_resource($ch))
+		if($ch === false)
 		{
 			$this->result="Error";
 			$this->resultcode="E";

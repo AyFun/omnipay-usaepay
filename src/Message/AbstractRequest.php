@@ -147,6 +147,76 @@ abstract class AbstractRequest extends OmnipayAbstractRequest
     public function sendData($data)
     {
 
+        // $ServiceProvider = new PhpUsaepaySP($this);
+        // $ServiceProvider->boot();
+        // $ServiceProvider->register();
+        // $sourcekey = $this->getSource();
+        // $sourcepin = $this->getPin();
+        // $sandbox = $this->getSandbox();
+        // $options = [
+        //     'debug' => true,
+        // ];
+        // var_dump($sourcekey, $sourcepin, $sandbox, $options);
+        // $usaepay = new Client($sourcekey, $sourcepin, $sandbox, $options);
+        // var_dump($usaepay);
+        // $request = [
+        //     'Command' => 'sale',
+        //     'AccountHolder' => 'John Doe',
+        //     'Details' => [
+        //       'Description' => 'Example Transaction',
+        //       'Amount' => '4.00',
+        //       'Invoice' => '44539'
+        //     ],
+        //     'CreditCardData' => [
+        //       'CardNumber' => '4444555566667779',
+        //       'CardExpiration' => '0922',
+        //       'AvsStreet' => '1234 Main Street',
+        //       'AvsZip' => '99281',
+        //       'CardCode' => '999'
+        //     ]
+        // ];
+
+        // $result = $usaepay->runTransaction($request);
+        // var_dump($result);
+        // check if we are mocking a request
+        //$mock = false;
+
+        // $listeners = $this->httpClient->getEventDispatcher()->getListeners('request.before_send');
+        // foreach ($listeners as $listener) {
+        //     if (get_class($listener[0]) === 'Guzzle\Plugin\Mock\MockPlugin') {
+        //         $mock = true;
+
+        //         break;
+        //     }
+        // }
+        //var_dump($data);
+        //$mock = true;
+        // if we are mocking, use guzzle, otherwise use umTransaction
+        // if ($mock) {
+        // var_dump($this->getPin());
+        // $httpResponse = $this->httpClient->request(
+        //     $this->getHttpMethod(),
+        //     $this->getEndpoint(),
+        //     [],
+        //     http_build_query(array(
+        //         'amount'                   => '12.00',
+        //         'currency'                 => 'USD',
+        //         'card'                     => array(
+        //             'firstName'    => 'Example',
+        //             'lastName'     => 'Customer',
+        //             'number'       => '4242424242424242',
+        //             'expiryMonth'  => '01',
+        //             'expiryYear'   => '2022',
+        //             'cvv'          => '123',
+        //         ),
+        //     ))
+        // );
+        // var_dump($httpResponse->getBody()->getContents());
+        // return $this->response = new Response($this, $httpResponse->getBody()->getContents());
+        //throw new Exception(var_export($httpResponse->getBody()->getContents()));
+        //die();
+        //$httpResponse = $httpRequest->send();
+        // } else {
         $umTransaction = new umTransaction();
         $umTransaction->usesandbox = $this->getSandbox();
         $umTransaction->testmode = $this->getTestMode();
@@ -193,7 +263,10 @@ abstract class AbstractRequest extends OmnipayAbstractRequest
             throw new Exception($umTransaction->error);
         }
 
-        $httpResponse = Guzzle\Http\Message\Response::fromMessage($umTransaction->rawresult);
+        $httpResponse = GuzzleHttp\Message\MessageFactory::fromMessage($umTransaction->rawresult);
+        //}
+        // var_dump($umTransaction->rawresult);var_dump('11111111111111');
+        // die();
 
         return $this->response = new Response($this, $httpResponse->getBody());
     }
