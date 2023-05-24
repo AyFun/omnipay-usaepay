@@ -431,7 +431,7 @@ class umTransaction {
 					break;
 				case 'checkimage_front':
 				case 'checkimage_back':
-					$data[$apifield] = base64_encode($this->$classfield);
+					$data[$apifield] = @base64_encode($this->$classfield);
 					break;
 				case 'billsourcekey':
 					if($this->billsourcekey) $data['UMbillsourcekey'] = 'yes';
