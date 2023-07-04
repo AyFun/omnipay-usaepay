@@ -262,17 +262,83 @@ abstract class AbstractRequest extends OmnipayAbstractRequest
         if ($processResult !== true) {
             throw new Exception($umTransaction->error);
         }
+        $data =$this->parseResponse($umTransaction->rawresult);
 
-        $httpResponse = GuzzleHttp\Message\MessageFactory::fromMessage($umTransaction->rawresult);
-        //}
-        // var_dump($umTransaction->rawresult);var_dump('11111111111111');
-        // die();
-
-        return $this->response = new Response($this, $httpResponse->getBody());
+        return $this->response = new Response($this, $data['body']);
     }
 
     protected function getEndpoint()
     {
         return $this->getTestMode() ? $this->sandboxEndpoint : $this->liveEndpoint;
+    }
+
+    protected function parseResponse($message)
+    {
+        if (!$message) {
+            return false;
+        }
+
+        $parts = $this->parseMessage($message);
+        list($protocol, $version) = explode('/', trim($parts['start_line'][0]));
+
+        return array(
+            'protocol'      => $protocol,
+            'version'       => $version,
+            'code'          => $parts['start_line'][1],
+            'reason_phrase' => isset($parts['start_line'][2]) ? $parts['start_line'][2] : '',
+            'headers'       => $parts['headers'],
+            'body'          => $parts['body']
+        );
+    }
+
+    /**
+     * Parse a message into parts
+     *
+     * @param string $message Message to parse
+     *
+     * @return array
+     */
+    protected function parseMessage($message)
+    {
+        $startLine = null;
+        $headers = array();
+        $body = '';
+
+        // Iterate over each line in the message, accounting for line endings
+        $lines = preg_split('/(\\r?\\n)/', $message, -1, PREG_SPLIT_DELIM_CAPTURE);
+        for ($i = 0, $totalLines = count($lines); $i < $totalLines; $i += 2) {
+
+            $line = $lines[$i];
+
+            // If two line breaks were encountered, then this is the end of body
+            if (empty($line)) {
+                if ($i < $totalLines - 1) {
+                    $body = implode('', array_slice($lines, $i + 2));
+                }
+                break;
+            }
+
+            // Parse message headers
+            if (!$startLine) {
+                $startLine = explode(' ', $line, 3);
+            } elseif (strpos($line, ':')) {
+                $parts = explode(':', $line, 2);
+                $key = trim($parts[0]);
+                $value = isset($parts[1]) ? trim($parts[1]) : '';
+                if (!isset($headers[$key])) {
+                    $headers[$key] = $value;
+                } elseif (!is_array($headers[$key])) {
+                    $headers[$key] = array($headers[$key], $value);
+                } else {
+                    $headers[$key][] = $value;
+                }
+            }
+        }
+
+        return array(
+            'start_line' => $startLine,
+            'headers'    => $headers,
+            'body'       => $body
+        );
     }
 }
